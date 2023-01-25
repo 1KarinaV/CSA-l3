@@ -4,6 +4,8 @@ from lexer import Lexer
 
 ___all__ = ["Parser"]
 
+stack = []
+
 
 class Parser:
     def __init__(self, lex):
@@ -16,8 +18,10 @@ class Parser:
         self.memory = {}
         self.instructions = []
         self.variable_to_be_assigned = -1
+        self.prev_token = None
 
     def update(self):
+        self.prev_token = self.curr_token
         self.curr_token = self.next_token
         self.next_token = next(self.lex)
 
@@ -74,6 +78,7 @@ class Parser:
             self.is_next(Token.RPAREN)
             self.is_next(Token.SEMICOLON)
             self.update()
+            self.instructions.append({'opcode': "halt"})
             return PrintStatement(state, value)
 
     def parse_let_statement(self) -> Statement:
@@ -137,7 +142,8 @@ class Parser:
                 self.update()
                 if self.curr_token.name == Token.PLUS:
                     arg = list(self.memory.keys()).index(self.next_token.value)
-                    instr = ({'opcode': "add", 'arg': [arg]})
+                    arg1 = list(self.memory.keys()).index(self.prev_token.value)
+                    instr = ({'opcode': "add", 'arg': [arg, arg1]})
                     self.instructions.append(instr)
                     arg2 = list(self.memory.keys()).index(self.variable_to_be_assigned)
                     instr = ({'opcode': "save", 'arg': [arg2]})
@@ -148,6 +154,11 @@ class Parser:
                     self.instructions.append(instr)
                     arg2 = list(self.memory.keys()).index(self.variable_to_be_assigned)
                     instr = ({'opcode': "save", 'arg': [arg2]})
+                    self.instructions.append(instr)
+                if self.curr_token.name == Token.SMALL:
+                    arg = list(self.memory.keys()).index(self.next_token.value)
+                    arg1 = list(self.memory.keys()).index(self.prev_token.value)
+                    instr = ({'opcode': "less", 'arg': [arg1, arg]})
                     self.instructions.append(instr)
                 expression = self.parse_infix_expression(expression)
             else:
@@ -173,17 +184,15 @@ class Parser:
 
     def parse_while_expression(self) -> Expression:
         if self.curr_token == Token.WHILE:
-            instr = ({'opcode': "loop"})
-            self.instructions.append(instr)
             self.is_next(Token.LPAREN)
             self.update()
-            arg = list(self.memory.keys()).index(self.curr_token.value)
-            instr = ({'opcode': "cmpless", 'arg': [arg]})
-            self.instructions.append(instr)
             condition = self.parse_expression(Priority.LOWEST)
+            arg = list(self.memory.keys()).index(self.curr_token.value) + 1
+            instr = ({'opcode': "loop", 'arg': [arg]})
+            self.instructions.append(instr)
             self.is_next(Token.RPAREN)
             block = self.parse_block_Statements()
-            instr = ({'opcode': "jne"})
+            instr = ({'opcode': "jne", 'arg': None})
             self.instructions.append(instr)
             return WhileStatement(condition, block)
 

@@ -1,9 +1,9 @@
-
 import json
 from nodes import *
 
 #  Маска для переполнения чисел
 MUSK_NUMBER = 2 ** 32 - 1
+
 
 class Opcode(str, Enum):
     """Opcode для ISA."""
@@ -14,7 +14,6 @@ class Opcode(str, Enum):
     SAVE = 'save'
     ADD = 'add'
     MOD = "mod"
-    SMALLEQ = "cmpless"
     JZ = 'jz'
     CMPEQU = "cmpequ"
     HALT = 'halt'
@@ -22,7 +21,10 @@ class Opcode(str, Enum):
     PRINT = 'print'
     PRINTLN = 'println'
     READ = 'rd'
-    #EQ = 'bne'
+    LOOP = "loop"
+    JNE = "jne"
+    MINUS = "sub"
+    CMPLESS = "less"
 
 
 # Список всех спец символов
@@ -33,7 +35,8 @@ symbol2opcode = {
     Token.PRINT.value: Opcode.PRINT,
     Token.MODULUS.value: Opcode.MOD,
     Token.PLUS.value: Opcode.ADD,
-    Token.SMALLEQ.value: Opcode.SMALLEQ,
+    Token.MINUS.value: Opcode.MINUS,
+    Token.SMALLEQ.value: Opcode.CMPLESS,
     "=": Opcode.CMPEQU,
     "ld": Opcode.LD,
     "println": Opcode.PRINTLN

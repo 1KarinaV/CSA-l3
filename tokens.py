@@ -23,7 +23,7 @@ EOF = 'EOF'
 
 class Token(NewEnum):
     # data types
-    STRING = re.compile(r'(\".*\")')
+    STRING = re.compile(r'(".*")')
     FLOAT = re.compile(r'\d+\.\d+')
     INT = re.compile(r'\d+')
     # brackets

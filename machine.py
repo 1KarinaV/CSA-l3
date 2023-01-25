@@ -16,6 +16,7 @@ class DataPath:
         self.data_address = 0
         self.acc = 0
         self.dr = 0
+        self.flag = False
         self.input_buffer = input_buffer
         self.output_buffer = []
         self.max_data = 2147483647
@@ -50,8 +51,16 @@ class DataPath:
         match op_type:
             case "add":
                 cur_value = self.data_memory[self.data_address] + self.dr
+                print("Сложение" + str(cur_value))
             case "mod":
                 cur_value = self.data_memory[self.data_address] % self.dr
+            case "sub":
+                cur_value = self.data_memory[self.data_address] - self.dr
+            case "less":
+                cur_value = self.data_memory[self.data_address] < self.dr
+                while self.data_memory[self.data_address] < self.dr:
+                    self.flag = True
+                self.flag = self.data_memory[self.data_address] < self.dr
             case Opcode.LD:
                 cur_value = self.dr
 
@@ -68,10 +77,13 @@ class DataPath:
         - вывод осуществляется просто в буфер. """
 
         if data_type:
+            print(self.data_memory_size)
+            print(self.data_memory)
             logging.debug('output: %s << %s', repr(
                 ''.join(self.output_buffer)), repr(str(self.data_memory[self.data_address])))
             self.output_buffer.append(str(self.data_memory[self.data_address]))
         else:
+            print(self.data_memory[self.data_address])
             symbol = chr(self.data_memory[self.data_address])
 
             logging.debug('output: %s << %s', repr(
@@ -106,6 +118,9 @@ class DataPath:
         """ Флаг нужен для проверки на знак """
         return self.acc < 0
 
+    def flag_status(self):
+        return self.flag
+
 
 class ControlUnit:
     """Блок управления процессора. Выполняет декодирование инструкций и
@@ -120,6 +135,7 @@ class ControlUnit:
         self.program_counter = 0
         self._tick = 0
         self.current_arg = 0
+        self.loop_stack = []
 
     def tick(self):
         """Счётчик тактов процессора. Вызывается при переходе на следующий такт."""
@@ -146,6 +162,8 @@ class ControlUnit:
 
         match opcode:
             case Opcode.HALT:
+                print('R')
+                exit(0)
                 raise StopIteration()
             case Opcode.LD | Opcode.SAVE:
                 self.execute_ld(instr, opcode)
@@ -153,12 +171,12 @@ class ControlUnit:
                 self.execute_save(instr)
             case Opcode.MOD:
                 self.execute_mod(instr, opcode)
-            case Opcode.ADD:
+            case Opcode.ADD | Opcode.MINUS | Opcode.CMPLESS:
                 self.execute_alu(instr, opcode)
-            case Opcode.CMPEQU:
-                self.execute_cmpequ()
-            case Opcode.JMP:
-                self.execute_jmp()
+            case Opcode.JNE:
+                self.execute_jne()
+            case Opcode.LOOP:
+                self.execute_loop(instr)
             case Opcode.PRINT | Opcode.PRINTLN:
                 self.execute_print(instr, opcode)
             case Opcode.READ:
@@ -177,7 +195,8 @@ class ControlUnit:
         self.data_path.latch_data_addr(instr["arg"][0])
         if opcode == Opcode.LD:
             if isinstance(instr["arg"][1], str):
-                self.data_path.latch_dr(1, ord(instr["arg"][1]), None)
+                # self.data_path.latch_dr(1, ord(instr["arg"][1]), None)
+                self.data_path.latch_dr(1, int(instr["arg"][1]), None)
             else:
                 self.data_path.latch_dr(1, instr["arg"][1], None)
             self.tick()
@@ -211,21 +230,25 @@ class ControlUnit:
             self.data_path.latch_data_addr(instr["arg"][arg_counter])
             arg_counter += 1
             self.tick()
-
         self.data_path.latch_acc(opcode)
         self.tick()
         self.latch_program_counter(sel_next=True)
 
-    def execute_jmp(self):
-        self.latch_program_counter(sel_next=False)
+    def execute_loop(self, instr):
+        self.loop_stack.append(instr["arg"][0])
         self.tick()
+        self.latch_program_counter(sel_next=True)
 
-    def execute_cmpequ(self):
-        self.tick()
-        if self.data_path.zero():
-            self.latch_program_counter(sel_next=True)
+    def execute_jne(self):
+        var = self.data_path.flag_status()
+        last_loop_number = self.loop_stack[len(self.loop_stack) - 1]
+        if var:
+            self.loop_stack.pop()
+            self.program_counter = last_loop_number
         else:
-            self.latch_program_counter(sel_next=False)
+            self.program_counter = last_loop_number
+        self.tick()
+        self.latch_program_counter(sel_next=True)
 
     def execute_print(self, instr, opcode):
         self.data_path.latch_data_addr(instr["arg"][0])
@@ -254,6 +277,7 @@ class ControlUnit:
             self.data_path.dr,
         )
 
+        print(self.program_counter)
         instr = self.program[self.program_counter]
         opcode = instr["opcode"]
         arg = instr.get("arg", "")
