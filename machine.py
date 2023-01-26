@@ -1,7 +1,6 @@
 """Модель процессора, позволяющая выполнить странслированные программы на языке Brainfuck.
 """
 import logging
-import sys
 
 from isa import *
 from math import copysign
@@ -16,7 +15,7 @@ class DataPath:
         self.data_address = 0
         self.acc = 0
         self.dr = 0
-        self.flag = False
+        self.flag = 0
         self.input_buffer = input_buffer
         self.output_buffer = []
         self.max_data = 2147483647
@@ -51,16 +50,15 @@ class DataPath:
         match op_type:
             case "add":
                 cur_value = self.data_memory[self.data_address] + self.dr
-                print("Сложение" + str(cur_value))
+                # print("Сложение" + str(cur_value))
             case "mod":
                 cur_value = self.data_memory[self.data_address] % self.dr
             case "sub":
                 cur_value = self.data_memory[self.data_address] - self.dr
             case "less":
-                cur_value = self.data_memory[self.data_address] < self.dr
-                while self.data_memory[self.data_address] < self.dr:
-                    self.flag = True
-                self.flag = self.data_memory[self.data_address] < self.dr
+                cur_value = self.dr < self.data_memory[self.data_address]
+                if self.data_memory[self.data_address] > self.dr:
+                    self.flag = self.dr < self.data_memory[self.data_address]
             case Opcode.LD:
                 cur_value = self.dr
 
@@ -162,8 +160,8 @@ class ControlUnit:
 
         match opcode:
             case Opcode.HALT:
-                print('R')
-                exit(0)
+                # print('R')
+                # exit(0)
                 raise StopIteration()
             case Opcode.LD | Opcode.SAVE:
                 self.execute_ld(instr, opcode)
@@ -243,9 +241,10 @@ class ControlUnit:
         var = self.data_path.flag_status()
         last_loop_number = self.loop_stack[len(self.loop_stack) - 1]
         if var:
-            self.loop_stack.pop()
+            # self.loop_stack.pop()
             self.program_counter = last_loop_number
         else:
+            self.loop_stack.pop()
             self.program_counter = last_loop_number
         self.tick()
         self.latch_program_counter(sel_next=True)
@@ -277,7 +276,7 @@ class ControlUnit:
             self.data_path.dr,
         )
 
-        print(self.program_counter)
+        # print(self.program_counter)
         instr = self.program[self.program_counter]
         opcode = instr["opcode"]
         arg = instr.get("arg", "")
@@ -325,5 +324,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+    import sys
+
     logging.getLogger().setLevel(logging.DEBUG)
     main(sys.argv[1:])
