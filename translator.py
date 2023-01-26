@@ -48,6 +48,10 @@ class Parser:
             return expression
         elif expression := self.print_statememt():
             return expression
+        elif expression := self.line_statememt():
+            return expression
+        elif expression := self.read_statememt():
+            return expression
         elif expression := self.parse_assign_statement():
             return expression
         elif expression := self.parse_if_expression():
@@ -78,8 +82,33 @@ class Parser:
             self.is_next(Token.RPAREN)
             self.is_next(Token.SEMICOLON)
             self.update()
-            self.instructions.append({'opcode': "halt"})
             return PrintStatement(state, value)
+
+    def line_statememt(self) -> Statement:
+        if self.curr_token == Token.LINE:
+            state = self.curr_token.value
+            self.is_next(Token.LPAREN)
+            self.update()
+            value = self.parse_expression(Priority.LOWEST)
+            self.instructions.append(
+                {'opcode': "println", 'arg': [list(self.memory.keys()).index(self.curr_token.value)]})
+            self.is_next(Token.RPAREN)
+            self.is_next(Token.SEMICOLON)
+            self.update()
+            return LineStatement(state, value)
+
+    def read_statememt(self) -> Statement:
+        if self.curr_token == Token.READ:
+            state = self.curr_token.value
+            self.is_next(Token.LPAREN)
+            self.update()
+            value = self.parse_expression(Priority.LOWEST)
+            self.instructions.append(
+                {'opcode': "read", 'arg': [list(self.memory.keys()).index(self.curr_token.value)]})
+            self.is_next(Token.RPAREN)
+            self.is_next(Token.SEMICOLON)
+            self.update()
+            return ReadStatement(state, value)
 
     def parse_let_statement(self) -> Statement:
         if self.curr_token == Token.LET:
@@ -132,7 +161,7 @@ class Parser:
             Token.EQUAL, Token.LARGE,
             Token.LARGEEQ, Token.SMALL,
             Token.SMALLEQ, Token.NOTEQ,
-            # logical operator 
+            # logical operator
             Token.AND, Token.OR
         ]
         while self.next_token != Token.SEMICOLON and \
@@ -160,6 +189,11 @@ class Parser:
                     arg1 = list(self.memory.keys()).index(self.prev_token.value)
                     instr = ({'opcode': "less", 'arg': [arg1, arg]})
                     self.instructions.append(instr)
+                if self.curr_token.name == Token.LARGE:
+                    arg = list(self.memory.keys()).index(self.next_token.value)
+                    arg1 = list(self.memory.keys()).index(self.prev_token.value)
+                    instr = ({'opcode': "more", 'arg': [arg1, arg]})
+                    self.instructions.append(instr)
                 expression = self.parse_infix_expression(expression)
             else:
                 break
@@ -186,10 +220,10 @@ class Parser:
         if self.curr_token == Token.WHILE:
             self.is_next(Token.LPAREN)
             self.update()
-            condition = self.parse_expression(Priority.LOWEST)
-            arg = list(self.memory.keys()).index(self.curr_token.value) + 1
+            arg = list(self.memory.keys()).index(self.curr_token.value) + 2
             instr = ({'opcode': "loop", 'arg': [arg]})
             self.instructions.append(instr)
+            condition = self.parse_expression(Priority.LOWEST)
             self.is_next(Token.RPAREN)
             block = self.parse_block_Statements()
             instr = ({'opcode': "jne", 'arg': None})
@@ -264,6 +298,8 @@ def main(args):
     parser = Parser(Lexer(source))
     for i in parser:
         if i == EOF:
+            instr = ({'opcode': "halt"})
+            parser.instructions.append(instr)
             break
     print("source LoC:", len(source.split()), "code instr:", len(parser.instructions))
     write_code(target, parser.instructions)

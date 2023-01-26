@@ -15,14 +15,14 @@ import machine
 import translator
 
 
-@pytest.mark.golden_test("golden/hello.yml")
+@pytest.mark.golden_test("golden/prob2.yml")
 def test_whole_by_golden(golden, caplog):
     caplog.set_level(logging.DEBUG)
 
     with tempfile.TemporaryDirectory() as tmp_dir_name:
-        source = os.path.join(tmp_dir_name, "hello_world.js")
+        source = os.path.join(tmp_dir_name, "prob2.js")
         input_stream = os.path.join(tmp_dir_name, "input.txt")
-        target = os.path.join(tmp_dir_name, "output.txt")
+        target = os.path.join(tmp_dir_name, "prob_out.txt")
 
         with open(source, "w", encoding="utf-8") as file:
             file.write(golden["source"])
@@ -40,3 +40,4 @@ def test_whole_by_golden(golden, caplog):
         assert instructions == golden.out["code"]
         assert stdout.getvalue() == golden.out["output"]
         assert caplog.text == golden.out["log"]
+

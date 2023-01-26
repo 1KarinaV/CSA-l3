@@ -227,7 +227,28 @@ class PrintStatement(Statement):
         return f"(print {self.value})"
 
     def eval(self):
-        if self.state == "println":
-            print(self.value.eval())
-        else:
-            print(self.value.eval(), end="")
+        print(self.value.eval(), end="")
+
+
+class LineStatement(Statement):
+    def __init__(self, state, value: Expression):
+        self.state = state
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"(line {self.value})"
+
+    def eval(self):
+        print(self.value.eval(), end="")
+
+
+class ReadStatement(Statement):
+    def __init__(self, state, value: Expression):
+        self.state = state
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"(read {self.value})"
+
+    def eval(self):
+        input(self.value.eval())

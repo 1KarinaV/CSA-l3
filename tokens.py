@@ -64,7 +64,9 @@ class Token(NewEnum):
     ELSE = re.compile(r'else')
     NAN = re.compile(r'nan')
     LET = re.compile(r'let')
-    PRINT = re.compile(r'(println)|(print)')
+    READ = re.compile(r'read')
+    PRINT = re.compile(r'print')
+    LINE = re.compile(r'line')
     RETURN = re.compile(r'return')
     # variables
     ID = re.compile(r'[_a-zA-Z][_a-zA-Z0-9]*')

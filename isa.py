@@ -20,27 +20,28 @@ class Opcode(str, Enum):
     JMP = "jmp"
     PRINT = 'print'
     PRINTLN = 'println'
-    READ = 'rd'
+    READ = 'read'
     LOOP = "loop"
     JNE = "jne"
     MINUS = "sub"
-    CMPLESS = "less"
+    CMPLESS = "less",
+    CMPMORE = "more",
 
 
 # Список всех спец символов
-correct_words = ["(", ")", "=", "%", "<", "+", "-", "/", "*", "print", "println", "read", "ld"]
-
+correct_words = ["(", ")", "=", "%", "<", ">", "+", "-", "/", "*", "print", "println", "read", "ld"]
 """Cловарь символов, непосредственно транслируемых в машинный код"""
 symbol2opcode = {
     Token.PRINT.value: Opcode.PRINT,
     Token.MODULUS.value: Opcode.MOD,
     Token.PLUS.value: Opcode.ADD,
     Token.MINUS.value: Opcode.MINUS,
-    Token.SMALLEQ.value: Opcode.CMPLESS,
+    "<": Opcode.CMPLESS,
+    Token.LARGE: Opcode.CMPMORE,
     "=": Opcode.CMPEQU,
     "ld": Opcode.LD,
+    "read": Opcode.READ,
     "println": Opcode.PRINTLN
-
 }
 
 
