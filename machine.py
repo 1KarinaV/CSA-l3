@@ -7,6 +7,8 @@ from math import copysign
 from translator import *
 
 
+
+
 class DataPath:
     def __init__(self, data_memory_size, input_buffer):
         assert data_memory_size > 0, "Data_memory size should be non-zero"
@@ -15,7 +17,6 @@ class DataPath:
         self.data_address = 0
         self.acc = 0
         self.dr = 0
-        self.flag = 0
         self.input_buffer = input_buffer
         self.output_buffer = []
         self.max_data = 2147483647
@@ -46,6 +47,7 @@ class DataPath:
         self.acc = self.alu(op_type)
 
     def alu(self, op_type):
+        global flag
         cur_value = 0
         match op_type:
             case "add":
@@ -58,7 +60,7 @@ class DataPath:
             case "less":
                 cur_value = self.dr < self.data_memory[self.data_address]
                 if self.data_memory[self.data_address] > self.dr:
-                    self.flag = self.dr < self.data_memory[self.data_address]
+                    flag = (self.dr < self.data_memory[self.data_address])
             case Opcode.LD:
                 cur_value = self.dr
 
@@ -117,7 +119,7 @@ class DataPath:
         return self.acc < 0
 
     def flag_status(self):
-        return self.flag
+        return flag
 
 
 class ControlUnit:
