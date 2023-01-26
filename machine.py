@@ -7,8 +7,6 @@ from math import copysign
 from translator import *
 
 
-
-
 class DataPath:
     def __init__(self, data_memory_size, input_buffer):
         assert data_memory_size > 0, "Data_memory size should be non-zero"
@@ -61,6 +59,10 @@ class DataPath:
                 cur_value = self.dr < self.data_memory[self.data_address]
                 if self.data_memory[self.data_address] > self.dr:
                     flag = (self.dr < self.data_memory[self.data_address])
+            case "more":
+                cur_value = self.dr > self.data_memory[self.data_address]
+                if self.data_memory[self.data_address] < self.dr:
+                    flag = (self.dr > self.data_memory[self.data_address])
             case Opcode.LD:
                 cur_value = self.dr
 
@@ -171,7 +173,7 @@ class ControlUnit:
                 self.execute_save(instr)
             case Opcode.MOD:
                 self.execute_mod(instr, opcode)
-            case Opcode.ADD | Opcode.MINUS | Opcode.CMPLESS:
+            case Opcode.ADD | Opcode.MINUS | Opcode.CMPLESS | Opcode.CMPMORE:
                 self.execute_alu(instr, opcode)
             case Opcode.JNE:
                 self.execute_jne()
