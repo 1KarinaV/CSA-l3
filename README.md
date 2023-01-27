@@ -8,7 +8,8 @@
 ### Синтаксис языка 
 Синтаксис языка  в форме Бэкуса — Наура :
 ``` ebnf
-<program> ::= <term>
+<program> ::= expression
+            | statement
 expression expression : expression '+' factor
                       | expression '-' factor
                       | expression '/' factor
@@ -21,20 +22,19 @@ factor     : NUM
            | float
            | ( expression )
 
-<term> ::= <variable initialization> | <while loop> | <print function> | <read function> | <term> <term>
-<variable initialization> ::= <type> <name>
-<type> ::= <int> | <string> | <float>
-<int> ::= [-2^31; 2^31 - 1]
-<string> ::= unicode symbols
-<name> ::= [a-zA-Z]+
-<while> ::= while  (<number>) <term> 
-<if> ::= if 
-<arithmetic operation> ::= + | - | * | / | % | ˆ | = 
-<logical operation> ::= && | || | !
-<conditional operation> ::= > | < | <= | >= | !=
-<print> ::= print(<name>)
-<read> ::= read(<name>)
-                       
+statement :  let_statement
+            | while_statement
+            | assign_statement
+            | print_statement
+            | read_statement
+            | line_statement
+
+let_statement::= id ":=" expression ";"
+while_statement::=<while> (condition) {stmt} ";"
+assign_statement::=<name> "=" <expression> ";"
+print_statement::="print" value ";"
+read_statement::="read" value ";"
+line_statement::="line" value ";"               
 
 ```
 
@@ -48,9 +48,8 @@ factor     : NUM
 - `let` Функция объявления переменной, принимает на вход "имя переменной" "значение"
 - `=` Функция изменения значения существующей переменной, принимает на вход "имя переменной" "новое значение"
 - `while` цикл while.
-- `loop` Функция объявления цикла
 - `print` Функция печати в стандартный вывод числа
-- `println` Функция печати в стандартный вывод символа
+- `line` Функция печати в стандартный вывод символа
 - `read` Функция чтения из стандартного входного потока
 
 ## Cистема команд
@@ -76,10 +75,9 @@ factor     : NUM
     - На вход подаются данные из `DR` и data memory
     - Поддерживаемые операции:
         - add - сложение двух операндов
-        - sub - вычесть из значения на левом входе значение на правом входе
-        - div - поделить значение на левом входе значение на правом входе
         - mod - остаток от деления значения левого входа от правого входа
-        - movv - подать на выход значение левого входа (Для чтения данных)
+        - less - сравнение двух операндов, значение левого должно быть меньше значения правого
+        - more - сравнение двух операндов, значение левого должно быть больше значения правого
     - Результат записывается в `AC` или `DR`
 - `program_counter` -- счётчик команд:
     - Может быть перезаписан из Control Unit
@@ -89,17 +87,19 @@ factor     : NUM
 
 | Syntax    | Mnemonic | Arguments        | Тактов | Comment                                                                                                    |
 |:----------|:---------|------------------|:------:|------------------------------------------------------------------------------------------------------------|
-| `let`     | ld       | addr, value      |   3    | Устанавливает значение $2 по данному адресу $1                                                             |
-| `=`       | mov      | addr             |   2    | Загружаем значения из AC в $1                                                                              |
+| `let`     | ld       | addr, value      |   4    | Устанавливает значение $2 по данному адресу $1                                                             |                              |
 | `%`       | mod      | addr, value      |   2    | Сохраняет в AC остаток от деления значения по адресу $1 на $2                                              |
-| `+`       | add      | addr, addr       |   4+   | Сложить значения, лежащие по адресам $1 $2, результат в AC                                                 |
+| `+`       | add      | addr, addr       |   5    | Сложить значения, лежащие по адресам $1 $2, результат в AC                                                 |
 | `-`       | sub      | addr, addr       |   4+   | Вычесть из значения, лежащего по адресу $1 значение в адресе $2, результат в AC                            |
 | `while`   | loop     | addr, addr, addr |  5/6   | Пока условие выполняется, исполняем тело функции                                                           |
-| `<`       | cmpequ   | addr, addr       |   4+   | Сравнение значений двух чисел, лежащие по адресам $1 и  $2. Пока значение в DR < значения ACC, flag = TRUE | 
-| `read`    | rd       | addr             |   2    | Прочитать один символ с потока ввода                                                                       |
-| `print`   | print    | addr             |   2    | Вывод числа по адресу $1                                                                                   |
-| `println` | printf   | addr             |   2    | Вывод символа по адресу $1                                                                                 |
-| `loop`    | loop     | addr             |   1    | Безусловный переход по адресу $1                                                                           |
+| `<`       | less     | addr, addr       |   5    | Сравнение значений двух чисел, лежащие по адресам $1 и  $2. Пока значение в DR < значения ACC, flag = TRUE |
+| `<`       | more     | addr, addr       |   5    | Сравнение значений двух чисел, лежащие по адресам $1 и  $2. Пока значение в DR > значения ACC, flag = TRUE |
+| `save`    | save     | addr             |   3    | Сохраняет значение по адресу                                                                               |
+| `read`    | read     | addr             |   3    | Прочитать один символ с потока ввода                                                                       |
+| `print`   | print    | addr             |   3    | Вывод числа по адресу $1                                                                                   |
+| `println` | printf   | addr             |   3    | Вывод символа по адресу $1                                                                                 |
+| `loop`    | loop     | addr             |   2    | Хранит адрес начала цикла                                                                                  |
+| `jne`     | jne      | 0                |   2    | Возвращается на начало цикла, пока flag = True                                                             |
 |           | halt     | 0                |   0    | остановка                                                                                                  | 
 
 ### Кодирование инструкций
@@ -164,7 +164,7 @@ factor     : NUM
 - `latch_acc` -- защёлкнуть в аккумулятор значение с ALU;
 - `latch_dr` -- защелкнуть в регистр данных выбранное значение
 - `output` -- записать текущее значение `data memory` в порт вывода ;
-- `write` -- записать выбранное значение в память:
+- `wr` -- записать выбранное значение в память:
     - Из регистра `AC`
     - с порта ввода (обработка на python).
 
@@ -201,7 +201,7 @@ factor     : NUM
 
 В качестве тестов использовано два алгоритма:
 
-1. [hello world](examples/hello_world.js).
+1. [hello world](examples/cat.js).
 2. [prob2](examples/prob2.js)
 
 Tесты реализованы тут: [integration_test](integration_test.py)
@@ -454,6 +454,6 @@ instr_counter:  22 ticks: 77
 | ФИО           | алг.  | LoC | code байт | code инстр. | инстр. | такт. | вариант                                                |
 |---------------|-------|-----|-----------|-------------|--------|-------|--------------------------------------------------------|
 | Владыкина К.К | hello | 56  | -         | 33          | 22     | 77    | alg  risc  harv  hw  instr struct  stream  port  prob2 |
-| Владыкина К.К | cat   | 5   | -         | 5           | 13     | 36    | alg  risc  harv  hw  instr struct  stream  port  prob2 |
+| Владыкина К.К | cat   | 16  | -         | 8           | 16     | 55    | alg  risc  harv  hw  instr struct  stream  port  prob2 |
 | Владыкина К.К | prob2 | 47  | -         | 18          | 127    | 493   | alg  risc  harv  hw  instr struct  stream  port  prob2 |
 

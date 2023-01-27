@@ -133,35 +133,6 @@ class WhileStatement(Statement):
             self.stmt.eval()
 
 
-class ForStatement(Statement):
-    def __init__(self, condition, step_expression, condition2: Expression, stmt: Statement):
-        self.stmt = stmt
-        self.condition = condition
-        self.condition2 = condition2
-        self.step_expression = step_expression
-
-    def __repr__(self) -> str:
-        return f"(for {self.step_expression}, {self.condition}, {self.condition2}, {self.stmt})"
-
-    def eval(self):
-        for self.step_expression in self.condition.eval(), self.condition2.eval():
-            self.stmt.eval()
-
-
-class DoWhileStatement(Statement):
-    def __init__(self, condition: Expression, stmt: BlockStatement):
-        self.condition = condition
-        self.stmt = stmt
-
-    def __repr__(self) -> str:
-        return f"(do  {self.stmt} while {self.condition})"
-
-    def eval(self):
-        while 1:
-            self.stmt.eval()
-            if not self.condition.eval():
-                break
-
 
 class InfixExpression(Expression):
     def __init__(self, left: Expression, operator: Statement, right: Expression):
