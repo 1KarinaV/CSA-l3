@@ -56,10 +56,6 @@ class Parser:
             return expression
         elif expression := self.parse_if_expression():
             return expression
-        elif expression := self.parse_for_expression():
-            return expression
-        elif expression := self.parse_do_while_expression():
-            return expression
         elif expression := self.parse_while_expression():
             return expression
         if expression != None:
@@ -185,11 +181,17 @@ class Parser:
                     instr = ({'opcode': "save", 'arg': [arg2]})
                     self.instructions.append(instr)
                 if self.curr_token.name == Token.SMALL:
+                    arg0 = list(self.memory.keys()).index(self.next_token.value) + 1
+                    instr = ({'opcode': "loop", 'arg': [arg0]})
+                    self.instructions.append(instr)
                     arg = list(self.memory.keys()).index(self.next_token.value)
                     arg1 = list(self.memory.keys()).index(self.prev_token.value)
                     instr = ({'opcode': "less", 'arg': [arg1, arg]})
                     self.instructions.append(instr)
                 if self.curr_token.name == Token.LARGE:
+                    arg0 = list(self.memory.keys()).index(self.next_token.value) + 1
+                    instr = ({'opcode': "loop", 'arg': [arg0]})
+                    self.instructions.append(instr)
                     arg = list(self.memory.keys()).index(self.next_token.value)
                     arg1 = list(self.memory.keys()).index(self.prev_token.value)
                     instr = ({'opcode': "more", 'arg': [arg1, arg]})
@@ -220,43 +222,12 @@ class Parser:
         if self.curr_token == Token.WHILE:
             self.is_next(Token.LPAREN)
             self.update()
-            arg = list(self.memory.keys()).index(self.curr_token.value) + 2
-            instr = ({'opcode': "loop", 'arg': [arg]})
-            self.instructions.append(instr)
             condition = self.parse_expression(Priority.LOWEST)
             self.is_next(Token.RPAREN)
             block = self.parse_block_Statements()
             instr = ({'opcode': "jne", 'arg': None})
             self.instructions.append(instr)
             return WhileStatement(condition, block)
-
-    def parse_for_expression(self) -> Expression:
-        if self.curr_token == Token.FOR:
-            self.is_next(Token.LPAREN)
-            self.update()
-            step_expression = self.parse_expression(Priority.LOWEST)
-            self.is_next(Token.SEMICOLON)
-            self.update()
-            condition = self.parse_expression(Priority.LOWEST)
-            self.is_next(Token.COMMA)
-            self.update()
-            condition2 = self.parse_expression(Priority.LOWEST)
-            self.is_next(Token.RPAREN)
-            block = self.parse_block_Statements()
-            return ForStatement(step_expression, condition, condition2, block)
-
-    def parse_do_while_expression(self) -> Expression:
-        if self.curr_token == Token.DO:
-            block = self.parse_block_Statements()
-            if self.curr_token == Token.WHILE:
-                self.is_next(Token.LPAREN)
-                self.update()
-                condition = self.parse_expression(Priority.LOWEST)
-                self.is_next(Token.RPAREN)
-                self.update()
-                return DoWhileStatement(condition, block)
-            else:
-                raise SyntaxError("expected while")
 
     def parse_datatypes(self) -> Expression:
         datatypes = [

@@ -6,6 +6,9 @@ from isa import *
 from math import copysign
 from translator import *
 
+count = 0
+char_mode = False
+
 
 class DataPath:
     def __init__(self, data_memory_size, input_buffer):
@@ -77,15 +80,11 @@ class DataPath:
         - вывод осуществляется просто в буфер. """
 
         if data_type:
-            # print(self.data_memory_size)
-            # print(self.data_memory)
             logging.debug('output: %s', repr(str(self.result_address)))
             self.output_buffer.append(str(self.data_memory[self.data_address]))
         else:
-            # print(self.data_memory[self.data_address])
             symbol = chr(self.data_memory[self.data_address])
 
-            # print(self.result_address)
             logging.debug('output: %s << %s', repr(
                 ''.join(self.output_buffer)), repr(symbol))
             self.output_buffer.append(symbol)
@@ -163,8 +162,6 @@ class ControlUnit:
 
         match opcode:
             case Opcode.HALT:
-                # print('R')
-                # exit(0)
                 raise StopIteration()
             case Opcode.LD | Opcode.SAVE:
                 self.execute_ld(instr, opcode)
@@ -193,11 +190,16 @@ class ControlUnit:
         self.latch_program_counter(sel_next=True)
 
     def execute_ld(self, instr, opcode):
+        global char_mode
         self.data_path.latch_data_addr(instr["arg"][0])
         if opcode == Opcode.LD:
+            if count < 3:
+                char_mode = True
             if isinstance(instr["arg"][1], str):
-                self.data_path.latch_dr(1, ord(instr["arg"][1]), None)
-                #self.data_path.latch_dr(1, int(instr["arg"][1]), None)
+                if char_mode:
+                    self.data_path.latch_dr(1, ord(instr["arg"][1]), None)
+                else:
+                    self.data_path.latch_dr(1, int(instr["arg"][1]), None)
             else:
                 self.data_path.latch_dr(1, instr["arg"][1], None)
             self.tick()
@@ -278,7 +280,6 @@ class ControlUnit:
             self.data_path.dr,
         )
 
-
         instr = self.program[self.program_counter]
         opcode = instr["opcode"]
         arg = instr.get("arg", "")
@@ -303,21 +304,24 @@ def simulation(instructions, input_tokens, data_memory_size, limit):
         logging.warning('Input buffer is empty!')
     except StopIteration:
         pass
-    # logging.info('output_buffer: %s', str(data_path.result_address))
-    # return str(data_path.result_address), instr_counter, control_unit.current_tick()
-    # if data_path.output(data_type=True):
-    #     logging.info('output_buffer: %s', str(data_path.result_address))
-    #     return str(data_path.result_address), instr_counter, control_unit.current_tick()
-    # else:
-    logging.info('output_buffer: %s', repr(''.join(data_path.output_buffer)))
-    return ''.join(data_path.output_buffer), instr_counter, control_unit.current_tick()
+    if char_mode:
+        logging.info('output_buffer: %s', repr(''.join(data_path.output_buffer)))
+        return ''.join(data_path.output_buffer), instr_counter, control_unit.current_tick()
+    else:
+        logging.info('output_buffer: %s', str(data_path.result_address))
+        return str(data_path.result_address), instr_counter, control_unit.current_tick()
 
 
 def main(args):
     assert len(args) == 2, "Wrong arguments: machine.py <code_file> <input_file>"
     code_file, input_file = args
-
+    global count
     instructions = read_code(code_file)
+    for vl in instructions:
+        a = vl["opcode"]
+        if a == "ld":
+            count += 1
+
     with open(input_file, encoding="utf-8") as file:
         input_text = file.read()
         input_token = []

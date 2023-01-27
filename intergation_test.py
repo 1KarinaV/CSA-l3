@@ -28,7 +28,6 @@ def test_cat(golden, caplog):
             file.write(golden["source"])
         with open(input_stream, "w", encoding="utf-8") as file:
             file.write(golden["input"])
-
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
             translator.main([source, target])
             print("============================================================")
